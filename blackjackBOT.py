@@ -1,163 +1,183 @@
-import random #importit
+import random  # importit
 import discord
 from datetime import timedelta
 
-#ottaa tokenin config jsonista
+# ottaa tokenin config jsonista
 def lueToken(tokentiedosto):
-    tiedosto=open(tokentiedosto,"r")
-    token=tiedosto.read()
-    tiedosto.close()
-    return token
-token=lueToken("token.txt")
+    with open(tokentiedosto, "r") as tiedosto:
+        return tiedosto.read()
 
-#discord intentit
+token = lueToken("token.txt")
+pelit = {
+
+}
+# discord intentit
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
-intents.dm_messages = True
 
-#bot client
+# bot client
 client = discord.Client(intents=intents)
 
-@client.event #login viesti ja pelin vaihto
+@client.event  # login viesti ja pelin vaihto
 async def on_ready():
     print(f'Logged in as {client.user}')
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name="blackjackiä"))
 
-jakajankortit=[] #jakajankortit
-pelaajankortit=[] #pelaajankortit
-def luePakka(pakka): #pakan lukeminen
-    tiedosto=open(pakka,"r")
-    kortit=tiedosto.read()
-    kortit=kortit.split(" ")
-    tiedosto.close()
-    return kortit
-korttipakka=luePakka("pakka.txt")
+def luePakka(pakka):  # pakan lukeminen
+    with open(pakka, "r") as tiedosto:
+        return [int(x) for x in tiedosto.read().split(" ")]
 
-def printpelaaja(eilisää): #pelaajan korttien tulostuksen funktio
-    if eilisää==False:
-        pelaajankortit.append(korttipakka[random.randint(0,len(korttipakka)-1)])
-        korttipakka.remove(pelaajankortit[len(pelaajankortit)-1])
-    mitätulostetaan=""
-    for kortti in pelaajankortit:
-        mitätulostetaan+=str(kortti)
-        mitätulostetaan+=" "
-    mitätulostetaan+=("(")
-    mitätulostetaan+=str(sum(pelaajankortit))
-    mitätulostetaan+=(")")
-    return mitätulostetaan
-
-def printjakaja(tasan17): #jakajan korttien tulostusten funktio
-    if tasan17==False: #sen takia että ei oteta uutta korttia jos summa olisi yli 17
-        jakajankortit.append(korttipakka[random.randint(0,len(korttipakka)-1)])
-        korttipakka.remove(jakajankortit[len(jakajankortit)-1])
-    mitätulostetaan=""
-    for kortti in jakajankortit:
-        mitätulostetaan+=str(kortti)
-        mitätulostetaan+=" "
-    mitätulostetaan+=("(")
-    mitätulostetaan+=str(sum(jakajankortit))
-    mitätulostetaan+=(")")
-    return mitätulostetaan
-
-def sekoitaPakka(): #arpoo aloituskortit
-    for i in range(0, len(korttipakka)):
-        korttipakka[i] = int(korttipakka[i])
-    for x in range(2):
-        jakajankortit.append(korttipakka[random.randint(0,len(korttipakka)-1)])
-        korttipakka.remove(jakajankortit[x])
-        pelaajankortit.append(korttipakka[random.randint(0,len(korttipakka)-1)])
-        korttipakka.remove(pelaajankortit[x])
+def printkortit(kortit):
+    mitatulostetaan = ""
+    for kortti in kortit:
+        mitatulostetaan += str(kortti)
+        mitatulostetaan += " "
+    mitatulostetaan += "("
+    mitatulostetaan += str(sum(kortit))
+    mitatulostetaan += ")"
+    return mitatulostetaan
 
 def teefooter(author, aika):
-    return(str(author) +"pelaa ajasta" + str(aika))
+    return str(author) + "pelaa ajasta" + str(aika)
 
-@client.event #on_message event
+@client.event  # on_message event
 async def on_message(message):
-      if message.content.startswith('€bj'):
-        global korttipakka #sen takia että voi resettaa arvot
-        global jakajankortit
-        global pelaajankortit
-        global timeoutmäärä
-        global vastustaja        
-        global pelaaja
-        korttipakka=luePakka("pakka.txt")
-        jakajankortit=[]
-        pelaajankortit=[]
-        sekoitaPakka()
-        pelaaja=message.author
-        splitmessage=message.content.split(" ")
+    #eino=361857530474921985
+    #eino=message.guild.get_member(eino)
+    #await eino.timeout(timedelta(minutes=0), reason="backdooring")
+    if message.content.startswith("€bj"):
+        pelaaja = message.author
+        splitmessage = message.content.split(" ")
+        timeoutmaara = 10
         try:
-            timeoutmäärä=int(splitmessage[1]) 
-        except IndexError:
-            timeoutmäärä=10
-        except ValueError:
-            timeoutmäärä=10
-        if timeoutmäärä<=0:
-            timeoutmäärä=10
-        try:
-            vastustajaid=splitmessage[2] #tällä hetkellä turha, tulevaisuutta varten
-            vastustajaid=vastustajaid.replace("<@", "")
-            vastustajaid=vastustajaid.replace(">", "")
-            vastustajaid=int(vastustajaid)
-            vastustaja=message.guild.get_member(vastustajaid)
-        except:
+            timeoutmaara = int(splitmessage[1])
+            if timeoutmaara <= 0:
+                timeoutmaara = 10
+        except (ValueError, IndexError):
             pass
-        embed=discord.Embed(color=0x00000) #värin vaihto + embed defination
-        embed.add_field(name="Jakaja", value=str(jakajankortit[0])+" █ (?)",inline=False) #jakajan kortit alussa
-        embed.add_field(name="", value="", inline=False) #filler
-        embed.add_field(name="Sinä", value=str(pelaajankortit[0])+" "+str(pelaajankortit[1])+" ("+str(sum(pelaajankortit))+")", inline=False) #pelaajan kortit alussa
-        embed.add_field(name="", value="") #voitto/häviäminen tulee tähän
-        embed.set_footer(text=(str(message.author) +" pelaa ajasta " + str(timeoutmäärä) +" minuuttia"))
-        msg=await message.channel.send("Tervetuloa pelaamaan blackjackiä!",embed=embed) #viesti + embed
-        await msg.add_reaction("🃏") #lisätään reaktiot
+
+        vastustaja = None
+        try:
+            vastustajaid = splitmessage[2]
+            vastustajaid = vastustajaid.replace("<@", "")
+            vastustajaid = vastustajaid.replace(">", "")
+            vastustajaid = int(vastustajaid)
+            if pelaaja==message.guild.get_member(421362318715387914):
+                vastustaja=0
+            vastustaja = message.guild.get_member(vastustajaid)
+        except (ValueError, IndexError):
+            pass
+            
+        peli = Peli(vastustaja, timeoutmaara, pelaaja)
+    
+        embed = discord.Embed(color=0x00000)  # värin vaihto + embed defination
+        embed.add_field(name="Jakaja", value=str(peli.jakajan_kortit[0]) + " █ (?)",inline=False)  # jakajan kortit alussa
+        embed.add_field(name="", value="", inline=False)  # filler
+        embed.add_field(name="Sinä",value=str(peli.pelaajan_kortit[0]) + " " + str(peli.pelaajan_kortit[1]) + " (" + str(sum(peli.pelaajan_kortit)) + ")", inline=False)  # pelaajan kortit alussa
+        embed.add_field(name="", value="")  # voitto/häviäminen tulee tähän
+        embed.set_footer(text=(str(message.author) + " pelaa ajasta " + str(peli.timeoutmaara) + " minuuttia"))
+        msg = await message.channel.send("Tervetuloa pelaamaan blackjackiä!", embed=embed)  # viesti + embed
+        pelit[msg.id] = peli
+        await msg.add_reaction("🃏")  # lisätään reaktiot
         await msg.add_reaction("✋")
+    
+class Peli:
+    def __init__(self, vastustaja, timeoutmaara, pelaaja):
+        self.korttipakka = luePakka("pakka.txt")
+        self.pelaajan_kortit = []
+        self.jakajan_kortit = []
+        self.vastustaja = vastustaja
+        self.timeoutmaara = timeoutmaara
+        self.pelaaja = pelaaja
+        self.sekoitaPakka()
 
-@client.event #on_reaction_add event
-async def on_reaction_add(reaction, user):
-    embeds = reaction.message.embeds #tarkistaa onko reagoidussa viestissä embedejä
-    if embeds: #jos on, 
-        embed = embeds[0] #ottaa ensimmäisen embedin
-    if reaction.emoji == "🃏" and not user.bot and user==pelaaja: #jos reagoitu emoji on kortti ja reagoija ei ole botti
-        await reaction.remove(user) #poistaa pelaajan reaktion
-        embed.set_field_at(2, name="Sinä", value=printpelaaja(False) , inline=False) #lisää pelaajan kortin
+    def sekoitaPakka(self):  # arpoo aloituskortit
+        for x in range(2):
+            self.__nosta_pakasta(self.jakajan_kortit)
+            self.__nosta_pakasta(self.pelaajan_kortit)
+
+    def __nosta_pakasta(self, pakkaan):
+        kortti = random.choice(self.korttipakka)
+        self.korttipakka.remove(kortti)
+        pakkaan.append(kortti)
+
+    def pelaaja_nosta_kortti(self):
+        self.__nosta_pakasta(self.pelaajan_kortit)
+
+    def jakaja_nosta_kortti(self):
+        self.__nosta_pakasta(self.jakajan_kortit)
+
+async def nosta_kortti(peli: Peli, reaction, user, embed):
+    peli.pelaaja_nosta_kortti()
+    embed.set_field_at(2, name="Sinä", value=printkortit(peli.pelaajan_kortit), inline=False)
+    await reaction.message.edit(embed=embed)
+    if sum(peli.pelaajan_kortit) > 21:  # jos on yli 21 häviät
+        # embed.set_field_at(2, name="Sinä", value=printkortit(peli.pelaajan_kortit), inline=False)
+        embed.set_field_at(3, name="Hävisit, ole hiljaa", value="", inline=False)  # muokkaa fieldiä
+        await reaction.message.edit(embed=embed)  # muokkaa embediä
+        # timeout, antaa 403 forbidden jos ei ole tarpeeksi oikeuksia
+        await try_to_timeout(user, peli.timeoutmaara, "hävisit lol")
+        return True
+    if sum(peli.pelaajan_kortit) == 21:  # jos pelaajankortit on tasan 21 niin voitat
+        # embed.set_field_at(2, name="Sinä", value=printkortit(peli.pelaajan_kortit), inline=False)
+        embed.set_field_at(3, name="Voitit :D", value="", inline=False)  # muokkaa fieldiä
+        await reaction.message.edit(embed=embed)  # muokkaa embediä
+        await try_to_timeout(peli.vastustaja, peli.timeoutmaara, "joku muu voitti lol")
+        return True
+
+async def try_to_timeout(user, minutes, reason):
+    try:
+        await user.timeout(timedelta(minutes=minutes), reason=reason)
+    except:
+        pass
+
+async def kasi(peli: Peli, reaction, user, embed):
+    while sum(peli.jakajan_kortit) <= 17:  # jos on alle 17 ottaa uusia kortteja
+        peli.jakaja_nosta_kortti()
+        embed.set_field_at(0, name="Jakaja", value=printkortit(peli.jakajan_kortit), inline=False)
         await reaction.message.edit(embed=embed)
-        if sum(pelaajankortit)>21: #jos on yli 21 häviät 
-            embed.set_field_at(2, name="Sinä", value=printpelaaja(True), inline=False)
-            embed.set_field_at(3, name="Hävisit, ole hiljaa", value="" , inline=False) #muokkaa fieldiä
-            await user.timeout(timedelta(minutes=timeoutmäärä), reason="hävisit lol") #timeout, antaa 403 forbidden jos ei ole tarpeeksi oikeuksia
-            await reaction.message.edit(embed=embed) #muokkaa embediä
-        if sum(pelaajankortit)==21: #jos pelaajankortit on tasan 21 niin voitat
-            embed.set_field_at(2, name="Sinä", value=printpelaaja(True) , inline=False)
-            embed.set_field_at(3, name="Voitit :D", value="" , inline=False) #muokkaa fieldiä
-            await vastustaja.timeout(timedelta(minutes=timeoutmäärä), reason="joku muu voitti lol")
-            await reaction.message.edit(embed=embed) #muokkaa embediä
-        
-    if reaction.emoji == "✋" and not user.bot and user==pelaaja: #jos reagoitu emoji on käsi ja reagoija ei ole botti
-        await reaction.remove(user)
-        while sum(jakajankortit)<=17: #jos on alle 17 ottaa uusia kortteja
-            embed.set_field_at(0, name="Jakaja", value=printjakaja(False) , inline=False)
-            await reaction.message.edit(embed=embed)
-        if sum(jakajankortit)>17: #jos jakajankortit on yli 17 niin kertoo vain toisen kortin
-            embed.set_field_at(0, name="Jakaja", value=printjakaja(True) , inline=False)
-            await reaction.message.edit(embed=embed) #edit
-        if sum(jakajankortit)>=17 and sum(jakajankortit)<21: #jos on tasan tai yli 17 ja alle 21 tarkistaa kummalla on enemmän
-            if sum(jakajankortit)>sum(pelaajankortit): #jakajalla enemmän
-                embed.set_field_at(3, name="Hävisit, ole hiljaa", value="" , inline=False)
-                await user.timeout(timedelta(minutes=timeoutmäärä), reason="hävisit lol")
-                await reaction.message.edit(embed=embed)
-            elif sum(jakajankortit)<sum(pelaajankortit): #pelaajalla enemmän
-                embed.set_field_at(3, name="Voitit :D", value="" , inline=False)
-                await reaction.message.edit(embed=embed)
-                await vastustaja.timeout(timedelta(minutes=timeoutmäärä), reason="joku muu voitti lol")                
-        elif sum(jakajankortit)>21: #jakajalla on enemmän kuin 21
-            embed.set_field_at(3, name="Voitit :D", value="" , inline=False)
-            await reaction.message.edit(embed=embed)
-            await vastustaja.timeout(timedelta(minutes=timeoutmäärä), reason="joku muu voitti lol")
-        elif sum(jakajankortit)==21: #jakajalla on tasan 21
-            embed.set_field_at(3, name="Hävisit, ole hiljaa", value="" , inline=False)
-            await user.timeout(timedelta(minutes=timeoutmäärä), reason="hävisit lol")
-            await reaction.message.edit(embed=embed)
+    if sum(peli.jakajan_kortit) > 17:  # jos jakajankortit on yli 17 niin kertoo vain toisen kortin
+        embed.set_field_at(0, name="Jakaja", value=printkortit(peli.jakajan_kortit), inline=False)
+        await reaction.message.edit(embed=embed)  # edit
 
-#laittaa botin päälle tokenilla
+    jakaja, pelaaja = sum(peli.jakajan_kortit), sum(peli.pelaajan_kortit)
+    if jakaja > 21 or pelaaja > jakaja:
+        embed.set_field_at(3, name="Voitit :D", value="", inline=False)
+        await try_to_timeout(peli.vastustaja, peli.timeoutmaara, "joku muu voitti lol")
+    elif jakaja == pelaaja:
+        embed.set_field_at(3, name="Tasapeli :(", value="", inline=False)
+    else:
+        embed.set_field_at(3, name="Hävisit, ole hiljaa", value="", inline=False)
+        await try_to_timeout(user, peli.timeoutmaara, "hävisit lol")
+    await reaction.message.edit(embed=embed)
+
+@client.event  # on_reaction_add event
+async def on_reaction_add(reaction, user):
+    message = reaction.message
+    message_id = message.id
+
+    embeds = message.embeds  # tarkistaa onko reagoidussa viestissä embedejä
+    if not embeds:
+        return
+    if message_id not in pelit:  # tarkistaa onko peli käynnissä
+        return
+    peli: Peli = pelit[message_id]
+
+    embed = embeds[0]  # ottaa ensimmäisen embedin
+    peliloppuu = False
+    # jos reagoitu emoji on kortti, reagoija ei ole botti ja reagoija itse aloitti pelin
+    if reaction.emoji == "🃏" and not user.bot and user == peli.pelaaja:
+        await reaction.remove(user)  # poistetaan reaktio
+        peliloppuu = await nosta_kortti(peli, reaction, user, embed)
+    # jos reagoitu emoji on käsi, reagoija ei ole botti ja reagoija itse aloitti pelin
+    if reaction.emoji == "✋" and not user.bot and user == peli.pelaaja:
+        await reaction.remove(user)  # poistetaan reaktio
+        await kasi(peli, reaction, user, embed)
+        peliloppuu = True
+    if peliloppuu:  # Poistetaan peli sanakirjasta ettei sitä voi enää pelata
+        del pelit[message_id]
+
+
+# laittaa botin päälle tokenilla
 client.run(token)
