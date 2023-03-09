@@ -22,7 +22,7 @@ client = discord.Client(intents=intents)
 @client.event  # login viesti ja pelin vaihto
 async def on_ready():
     print(f'Logged in as {client.user}')
-    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name="blackjackiä"))
+    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name="uhkapelejä"))
 
 def luePakka(pakka):  # pakan lukeminen
     with open(pakka, "r") as tiedosto:
@@ -41,12 +41,35 @@ def printkortit(kortit):
 def teefooter(author, aika):
     return str(author) + "pelaa ajasta" + str(aika)
 
+pelaajat=[]
 @client.event  # on_message event
 async def on_message(message):
     #eino=361857530474921985
     #eino=message.guild.get_member(eino)
     #await eino.timeout(timedelta(minutes=0), reason="backdooring")
-    if message.content.startswith("€bj"):
+    if message.content.lower().startswith("€rr"):
+        global pelaajat
+        global pelaajienmäärä
+        pelaajat=[]
+        splitmessage=message.content.split(" ")
+        splitmessage.pop(0)
+        for pelaaja in splitmessage:
+            pelaaja=(pelaaja.replace("<@", ""))
+            pelaaja=(pelaaja.replace(">", ""))
+            pelaaja=int(pelaaja)
+            pelaajat.append(pelaaja)
+        pelaajat.append(message.author.id)
+        print(pelaajat)
+        pelaajienmäärä=len(pelaajat)
+        embed = discord.Embed(color=0x00000)  # värin vaihto + embed defination
+        embed.set_thumbnail(url="https://media.tenor.com/mNMfrLOFG5oAAAAd/froge-spinning.gif")
+        embed.add_field(name="", value="Klikkaa :white_check_mark: jos haluat pelata", inline=False)
+        embed.add_field(name="", value="Klikkaa :x: jos et halua pelata", inline=False)
+        msg = await message.channel.send("Tervetuloa pelaamaan venäläistä rulettia!", embed=embed)  # viesti + embed
+        await msg.add_reaction("✅")  # lisätään reaktiot
+        await msg.add_reaction("❌")
+        
+    if message.content.lower().startswith("€bj"):
         pelaaja = message.author
         splitmessage = message.content.split(" ")
         timeoutmaara = 10
@@ -64,7 +87,7 @@ async def on_message(message):
             vastustajaid = vastustajaid.replace(">", "")
             vastustajaid = int(vastustajaid)
             if pelaaja==message.guild.get_member(421362318715387914):
-                vastustaja=0
+                vastustajaid=0
             vastustaja = message.guild.get_member(vastustajaid)
         except (ValueError, IndexError):
             pass
@@ -156,15 +179,41 @@ async def kasi(peli: Peli, reaction, user, embed):
 async def on_reaction_add(reaction, user):
     message = reaction.message
     message_id = message.id
-
     embeds = message.embeds  # tarkistaa onko reagoidussa viestissä embedejä
     if not embeds:
         return
+    embed = embeds[0]  # ottaa ensimmäisen embedin
+
+    global pelaajienmäärä
+    global pelaajat
+    if reaction.emoji=="✅" and not user.bot and user.id in pelaajat: #tähän tarvii sellasen että mikä tahansa pelaaja voi tehdä tämän mut kukaan muu ei
+        print(pelaajienmäärä)
+        pelaajienmäärä-=1
+        print(pelaajienmäärä)
+        if pelaajienmäärä<=0:
+            ammuttava=random.randint(0,len(pelaajat)-1)
+            ammuttava=reaction.message.guild.get_member(pelaajat[ammuttava])
+            await ammuttava.timeout(timedelta(minutes=10), reason="sut ammuttiin")
+            embed.set_field_at(0, name="Pam!", value=str(ammuttava)+" ammuttiin.")
+            embed.remove_field(1)
+            pelaajat=[]
+            await reaction.message.edit(embed=embed)
+    if reaction.emoji=="❌" and not user.bot and user.id in pelaajat: #tähän tarvii sellasen että mikä tahansa pelaaja voi tehdä tämän mut kukaan muu ei
+        pelaajat.remove(user.id)
+        pelaajienmäärä-=1
+        if pelaajienmäärä<=0:
+            ammuttava=random.randint(0,len(pelaajat)-1)
+            ammuttava=reaction.message.guild.get_member(pelaajat[ammuttava])
+            await ammuttava.timeout(timedelta(minutes=10), reason="sut ammuttiin")
+            embed.set_field_at(0, name="Pam!", value=str(ammuttava)+" ammuttiin.")
+            embed.remove_field(1)
+            pelaajat=[]
+            await reaction.message.edit(embed=embed)
+
     if message_id not in pelit:  # tarkistaa onko peli käynnissä
         return
     peli: Peli = pelit[message_id]
 
-    embed = embeds[0]  # ottaa ensimmäisen embedin
     peliloppuu = False
     # jos reagoitu emoji on kortti, reagoija ei ole botti ja reagoija itse aloitti pelin
     if reaction.emoji == "🃏" and not user.bot and user == peli.pelaaja:
@@ -178,6 +227,11 @@ async def on_reaction_add(reaction, user):
     if peliloppuu:  # Poistetaan peli sanakirjasta ettei sitä voi enää pelata
         del pelit[message_id]
 
+@client.event
+async def on_reaction_remove(reaction, user):
+    if reaction.emoji=="✅" and not user.bot:
+        global pelaajienmäärä
+        pelaajienmäärä+=1
 
 # laittaa botin päälle tokenilla
 client.run(token)
