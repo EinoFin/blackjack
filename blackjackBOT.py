@@ -62,7 +62,7 @@ async def on_message(message):
         print(pelaajat)
         pelaajienmäärä=len(pelaajat)
         embed = discord.Embed(color=0x00000)  # värin vaihto + embed defination
-        embed.set_thumbnail(url="https://media.tenor.com/mNMfrLOFG5oAAAAd/froge-spinning.gif")
+        embed.set_thumbnail(url="https://media.tenor.com/fklGVnlUSFQAAAAd/russian-roulette.gif")
         embed.add_field(name="", value="Klikkaa :white_check_mark: jos haluat pelata", inline=False)
         embed.add_field(name="", value="Klikkaa :x: jos et halua pelata", inline=False)
         msg = await message.channel.send("Tervetuloa pelaamaan venäläistä rulettia!", embed=embed)  # viesti + embed
@@ -138,6 +138,7 @@ async def nosta_kortti(peli: Peli, reaction, user, embed):
     if sum(peli.pelaajan_kortit) > 21:  # jos on yli 21 häviät
         # embed.set_field_at(2, name="Sinä", value=printkortit(peli.pelaajan_kortit), inline=False)
         embed.set_field_at(3, name="Hävisit, ole hiljaa", value="", inline=False)  # muokkaa fieldiä
+        embed.color=0xFF0000
         await reaction.message.edit(embed=embed)  # muokkaa embediä
         # timeout, antaa 403 forbidden jos ei ole tarpeeksi oikeuksia
         await try_to_timeout(user, peli.timeoutmaara, "hävisit lol")
@@ -145,6 +146,7 @@ async def nosta_kortti(peli: Peli, reaction, user, embed):
     if sum(peli.pelaajan_kortit) == 21:  # jos pelaajankortit on tasan 21 niin voitat
         # embed.set_field_at(2, name="Sinä", value=printkortit(peli.pelaajan_kortit), inline=False)
         embed.set_field_at(3, name="Voitit :D", value="", inline=False)  # muokkaa fieldiä
+        embed.color=0x00FF00
         await reaction.message.edit(embed=embed)  # muokkaa embediä
         await try_to_timeout(peli.vastustaja, peli.timeoutmaara, "joku muu voitti lol")
         return True
@@ -167,11 +169,13 @@ async def kasi(peli: Peli, reaction, user, embed):
     jakaja, pelaaja = sum(peli.jakajan_kortit), sum(peli.pelaajan_kortit)
     if jakaja > 21 or pelaaja > jakaja:
         embed.set_field_at(3, name="Voitit :D", value="", inline=False)
+        embed.color=0x00FF00
         await try_to_timeout(peli.vastustaja, peli.timeoutmaara, "joku muu voitti lol")
     elif jakaja == pelaaja:
         embed.set_field_at(3, name="Tasapeli :(", value="", inline=False)
     else:
         embed.set_field_at(3, name="Hävisit, ole hiljaa", value="", inline=False)
+        embed.color=0xFF0000
         await try_to_timeout(user, peli.timeoutmaara, "hävisit lol")
     await reaction.message.edit(embed=embed)
 
@@ -191,11 +195,12 @@ async def on_reaction_add(reaction, user):
         pelaajienmäärä-=1
         print(pelaajienmäärä)
         if pelaajienmäärä<=0:
-            ammuttava=random.randint(0,len(pelaajat)-1)
+            ammuttava=random.randint(0,len(pelaajat))
             ammuttava=reaction.message.guild.get_member(pelaajat[ammuttava])
             await ammuttava.timeout(timedelta(minutes=10), reason="sut ammuttiin")
             embed.set_field_at(0, name="Pam!", value=str(ammuttava)+" ammuttiin.")
             embed.remove_field(1)
+            embed.color=0xFF0000
             pelaajat=[]
             await reaction.message.edit(embed=embed)
     if reaction.emoji=="❌" and not user.bot and user.id in pelaajat: #tähän tarvii sellasen että mikä tahansa pelaaja voi tehdä tämän mut kukaan muu ei
@@ -207,6 +212,7 @@ async def on_reaction_add(reaction, user):
             await ammuttava.timeout(timedelta(minutes=10), reason="sut ammuttiin")
             embed.set_field_at(0, name="Pam!", value=str(ammuttava)+" ammuttiin.")
             embed.remove_field(1)
+            embed.color=0xFF0000
             pelaajat=[]
             await reaction.message.edit(embed=embed)
 
