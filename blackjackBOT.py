@@ -59,7 +59,6 @@ async def on_message(message):
             pelaaja=int(pelaaja)
             pelaajat.append(pelaaja)
         pelaajat.append(message.author.id)
-        print(pelaajat)
         pelaajienmäärä=len(pelaajat)
         embed = discord.Embed(color=0x00000)  # värin vaihto + embed defination
         embed.set_thumbnail(url="https://media.tenor.com/fklGVnlUSFQAAAAd/russian-roulette.gif")
@@ -190,12 +189,10 @@ async def on_reaction_add(reaction, user):
 
     global pelaajienmäärä
     global pelaajat
-    if reaction.emoji=="✅" and not user.bot and user.id in pelaajat: #tähän tarvii sellasen että mikä tahansa pelaaja voi tehdä tämän mut kukaan muu ei
-        print(pelaajienmäärä)
+    if reaction.emoji=="✅" and not user.bot and user.id in pelaajat:
         pelaajienmäärä-=1
-        print(pelaajienmäärä)
         if pelaajienmäärä<=0:
-            ammuttava=random.randint(0,len(pelaajat))
+            ammuttava=random.randint(0,len(pelaajat)-1)
             ammuttava=reaction.message.guild.get_member(pelaajat[ammuttava])
             await ammuttava.timeout(timedelta(minutes=10), reason="sut ammuttiin")
             embed.set_field_at(0, name="Pam!", value=str(ammuttava)+" ammuttiin.")
@@ -203,7 +200,7 @@ async def on_reaction_add(reaction, user):
             embed.color=0xFF0000
             pelaajat=[]
             await reaction.message.edit(embed=embed)
-    if reaction.emoji=="❌" and not user.bot and user.id in pelaajat: #tähän tarvii sellasen että mikä tahansa pelaaja voi tehdä tämän mut kukaan muu ei
+    if reaction.emoji=="❌" and not user.bot and user.id in pelaajat:
         pelaajat.remove(user.id)
         pelaajienmäärä-=1
         if pelaajienmäärä<=0:
