@@ -44,9 +44,6 @@ def teefooter(author, aika):
 pelaajat=[]
 @client.event  # on_message event
 async def on_message(message):
-    #eino=361857530474921985
-    #eino=message.guild.get_member(eino)
-    #await eino.timeout(timedelta(minutes=0), reason="backdooring")
     if message.content.lower().startswith("€rr"):
         global pelaajat
         global pelaajienmäärä
@@ -85,8 +82,6 @@ async def on_message(message):
             vastustajaid = vastustajaid.replace("<@", "")
             vastustajaid = vastustajaid.replace(">", "")
             vastustajaid = int(vastustajaid)
-            if pelaaja==message.guild.get_member(421362318715387914):
-                vastustajaid=0
             vastustaja = message.guild.get_member(vastustajaid)
         except (ValueError, IndexError):
             pass
